@@ -6,6 +6,7 @@ import spark.ResponseTransformer;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLException;
 
 import static spark.Spark.get;
 
@@ -16,7 +17,7 @@ class ChatServer implements Runnable {
     private int clientCount = 0;
     DataStore dataStore = new DataStore();
 
-    private ChatServer(int port) {
+    public ChatServer(int port) {
         try {
             JsonTransformer transformer = new JsonTransformer();
             get("/hello", "application/json", (req, res) -> "Hello World",
@@ -64,7 +65,10 @@ class ChatServer implements Runnable {
         }
     }
 
-    private int findClient(int id) {
+    protected int getClientCount() {
+    	return clientCount;
+    }
+    protected int findClient(int id) {
         for (int i = 0; i < clientCount; i++)
             if (clients[i].id == id)
                 return i;
@@ -79,11 +83,20 @@ class ChatServer implements Runnable {
             clients[findClient(id)].send(".bye");
             remove(id);
         } else {
-            for (int i = 0; i < clientCount; i++)
-                clients[i].send(id + ": " + input);
+            for (int i = 0; i < clientCount; i++) {
+            	clients[i].send(id + ": " + input);
+            	try {
+					dataStore.add(id + ": " + input);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+            }
+                
         }
+        
     }
 
+    
     private synchronized void remove(int ID) {
         int pos = findClient(ID);
         if (pos >= 0) {
@@ -101,7 +114,7 @@ class ChatServer implements Runnable {
         }
     }
 
-    private void addThread(Socket socket) {
+    public synchronized boolean addThread(Socket socket) {
         if (clientCount < clients.length) {
             System.out.println("Client accepted: " + socket);
             clients[clientCount] = new SocketHandler(this, socket);
@@ -109,11 +122,13 @@ class ChatServer implements Runnable {
                 clients[clientCount].open();
                 clients[clientCount].start();
                 clientCount++;
+                return true;
             } catch (IOException ioe) {
                 System.out.println("Error opening thread: " + ioe);
             }
         } else
             System.out.println("Client refused: maximum " + clients.length + " reached.");
+        return false;
     }
 
     private void start() {
@@ -189,5 +204,10 @@ class ChatServer implements Runnable {
             if (streamIn != null) streamIn.close();
             if (streamOut != null) streamOut.close();
         }
+        
+        public long getId() {
+        	return id;
+        }
+       
     }
 }
