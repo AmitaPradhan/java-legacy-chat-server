@@ -13,7 +13,7 @@ class ChatClient implements Runnable {
     private DataOutputStream streamOut = null;
     private SocketHandler client = null;
 
-    public ChatClient(String serverName, int serverPort) {
+    protected ChatClient(String serverName, int serverPort) {
         System.out.println("Establishing connection. Please wait ...");
         try {
             socket = new Socket(serverName, serverPort);
@@ -26,9 +26,10 @@ class ChatClient implements Runnable {
         }
     }
 
-    public Socket getSocket() {
+    protected Socket getSocket() {
     	return socket;
     }
+    
     public void run() {
         while (thread != null) {
             try {

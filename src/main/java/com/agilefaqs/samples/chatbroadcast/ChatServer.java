@@ -17,7 +17,7 @@ class ChatServer implements Runnable {
     private int clientCount = 0;
     DataStore dataStore = new DataStore();
 
-    public ChatServer(int port) {
+    protected ChatServer(int port) {
         try {
             JsonTransformer transformer = new JsonTransformer();
             get("/hello", "application/json", (req, res) -> "Hello World",
